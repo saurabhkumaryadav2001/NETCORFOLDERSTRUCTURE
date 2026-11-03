@@ -1,0 +1,313 @@
+LCL.Masters.API
+│
+├── LCL.Masters.API
+├── LCL.Masters.Application
+├── LCL.Masters.Core
+├── LCL.Masters.DataAccess
+├── LCL.Masters.Domain
+├── LCL.Masters.DTO
+└── LCL.Masters.Infrastructure
+
+
+Think of it like this:
+- API = Entry gate
+- Application = Brain / business logic
+- Domain = Business rules and entities
+- DataAccess = Database operations
+- DTO = Data transfer objects
+- Infrastructure = External services and technical implementation
+- Core = Common/shared code
+1. LCL.Masters.API — Controller layer
+Entry point
+This is where HTTP requests enter your application.
+
+Usually contains:
+LCL.Masters.API
+│
+├── Controllers
+│   └── CountryController.cs
+│
+├── Program.cs
+├── appsettings.json
+└── LCL.Masters.API.csproj
+
+
+What do you write here?
+- Controllers
+- API endpoints (GET, POST, PUT, DELETE)
+- Authentication and authorization configuration
+- Dependency Injection registration
+- Middleware configuration
+- Swagger configuration
+Example:
+[ApiController]
+[Route("api/[controller]")]
+public class CountryController : ControllerBase
+{
+    private readonly ICountryService _service;
+
+    public CountryController(ICountryService service)
+    {
+        _service = service;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetCountries()
+    {
+        var result = await _service.GetCountries();
+        return Ok(result);
+    }
+}
+
+
+Remember: Controller should not contain complicated business logic or direct SQL queries.
+
+2. LCL.Masters.Application — Business logic layer
+Application brain
+This layer decides what the application should do.
+
+Usually contains:
+LCL.Masters.Application
+│
+├── Interfaces
+│   └── ICountryService.cs
+│
+├── Services
+│   └── CountryService.cs
+│
+└── Validators
+
+
+What do you write here?
+- Service interfaces
+- Service implementations
+- Business logic
+- Validation logic
+- Application workflows
+Example interface:
+public interface ICountryService
+{
+    Task<List<CountryDTO>> GetCountries();
+}
+
+
+Example service:
+public class CountryService : ICountryService
+{
+    private readonly ICountryRepository _repository;
+
+    public CountryService(ICountryRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<List<CountryDTO>>> GetCountries()
+    {
+        return await _repository.GetCountries();
+    }
+}
+
+
+Note: The example has an extra closing angle bracket in the method signature; correct syntax is Task<List<CountryDTO>>.
+
+3. LCL.Masters.Domain — Entities and business rules
+Business objects
+This contains your main business entities.
+
+Example:
+LCL.Masters.Domain
+│
+├── Entities
+│   ├── Country.cs
+│   └── State.cs
+│
+└── Enums
+
+
+Example entity:
+public class Country
+{
+    public int CountryId { get; set; }
+
+    public string CountryName { get; set; }
+}
+
+
+What do you write here?
+- Entities
+- Domain models
+- Business rules that belong to the domain
+- Enums
+- Domain-related abstractions
+
+4. LCL.Masters.DataAccess — Database operations
+Database layer
+This layer communicates with SQL Server.
+
+Usually contains:
+LCL.Masters.DataAccess
+│
+├── Repositories
+│   └── CountryRepository.cs
+│
+├── DbContext
+│
+└── Database configuration
+
+
+What do you write here?
+- SQL queries
+- Stored procedure execution
+- Dapper queries
+- Entity Framework queries
+- Repository implementations
+- Database mapping
+Example using Dapper:
+public async Task<List<CountryDTO>> GetCountries()
+{
+    using var connection = new SqlConnection(_connectionString);
+
+    var result = await connection.QueryAsync<CountryDTO>(
+        "usp_GetCountries",
+        commandType: CommandType.StoredProcedure);
+
+    return result.ToList();
+}
+
+
+Remember: SQL Server communication belongs here, not inside controllers.
+
+5. LCL.Masters.DTO — Request and response models
+API data
+DTO means Data Transfer Object.
+
+It is used to transfer data between different layers or between client and API.
+
+Example:
+LCL.Masters.DTO
+│
+├── Request
+│   └── CountryRequestDTO.cs
+│
+└── Response
+    └── CountryResponseDTO.cs
+
+
+Example:
+public class CountryDTO
+{
+    public int CountryId { get; set; }
+
+    public string CountryName { get; set; }
+}
+
+
+Why DTO?
+Suppose your database entity contains:
+- CountryId
+- CountryName
+- CreatedBy
+- CreatedDate
+- IsDeleted
+But your API should return only:
+- CountryId
+- CountryName
+You create a DTO containing only those two properties.
+
+6. LCL.Masters.Infrastructure — Technical implementations
+External integrations
+This layer generally contains implementations of technical services.
+
+Examples:
+LCL.Masters.Infrastructure
+│
+├── Services
+├── Email
+├── Logging
+├── ExternalAPI
+└── DependencyInjection
+
+
+What do you write here?
+Depending on your project's design:
+- Email services
+- SMS services
+- External API integrations
+- File storage
+- Redis implementation
+- Authentication-related integrations
+- Other infrastructure implementations
+Your exact contents may differ based on your company's implementation.
+
+7. LCL.Masters.Core — Common/shared code
+Shared utilities
+This project generally contains common things used by multiple projects.
+
+Example:
+LCL.Masters.Core
+│
+├── Constants
+├── Common
+├── Exceptions
+├── Helpers
+└── Utilities
+
+
+Examples:
+- Common constants
+- Custom exceptions
+- Shared helper classes
+- Common interfaces
+- Utility methods
+Avoid putting business-specific logic here just because multiple classes need it.
+
+8. Most important: How an API works in your project
+Suppose you create a GetCountry API.
+1. API Controller
+
+Receives HTTP request
+
+2. Application Service
+
+Executes application logic
+
+3. DataAccess Repository
+
+Executes SQL / Stored Procedure
+
+4. SQL Server
+
+Returns database records
+
+5. DTO → Controller → JSON Response
+
+
+9. When you develop a new API, which project do you open?
+Task	Project
+Create API endpoint	API
+Create service interface	Application
+Write business logic	Application
+Write SQL query / execute SP	DataAccess
+Create repository	DataAccess
+Create request DTO	DTO
+Create response DTO	DTO
+Create entity	Domain
+Add external service implementation	Infrastructure
+Add common helper	Core
+
+10. Real example: Add a new Employee API
+Suppose you want to create:
+
+GET /api/Employee/GetEmployees
+
+You will typically create or update:
+1. LCL.Masters.DTO → EmployeeDTO.cs
+2. LCL.Masters.Application → IEmployeeService.cs
+3. LCL.Masters.Application → EmployeeService.cs
+4. LCL.Masters.DataAccess → IEmployeeRepository.cs and EmployeeRepository.cs (if this is how your project structures repositories)
+5. LCL.Masters.API → EmployeeController.cs
+The exact repository/interface locations depend on how your existing project is organized.
+
+One important thing: Your screenshot shows project names, but not their internal folders. So this is the standard Clean Architecture explanation based on the names, not a verified map of every folder in your codebase.
+
+If you're learning this project for real development, the most useful next step is to understand one existing API end-to-end: Controller → Service → Repository → Stored Procedure → DTO → Response.
